@@ -26,6 +26,11 @@ config ARM
 	bool "ARM architecture"
 	select HAS_DTS
 
+config ARM64
+	bool "ARM64 architecture"
+	select 64BIT
+	select HAS_DTS
+
 config X86
 	bool "x86 architecture"
 	select ATOMIC_OPERATIONS_BUILTIN
@@ -93,7 +98,7 @@ config 64BIT
 	  soc/**/Kconfig, or boards/**/Kconfig and the user should generally
 	  avoid modifying it.
 
-if ARC || ARM || NIOS2 || X86 || X86_64
+if ARC || ARM || NIOS2 || X86 || X86_64 || ARM64
 
 # Workaround for not being able to have commas in macro arguments
 DT_CHOSEN_Z_SRAM := zephyr,sram

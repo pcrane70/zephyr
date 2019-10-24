@@ -586,7 +586,7 @@ int z_prf(int (*func)(), void *dest, const char *format, va_list vargs)
 			case 'G':
 			{
 				uint64_t double_val;
-#ifdef CONFIG_X86_64
+#if defined(CONFIG_X86_64) || defined(CONFIG_ARM64)
 				/*
 				 * Can't use a double here because
 				 * we're operating in -mno-sse and

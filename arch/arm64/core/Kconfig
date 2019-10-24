@@ -1,0 +1,23 @@
+# Kconfig - ARM64 core configuration options
+
+#
+# Copyright 2019 Broadcom
+# The term "Broadcom" refers to Broadcom Inc. and/or its subsidiaries.
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+
+config CPU_CORTEX_A
+	bool
+	select ARMV8_A
+	select THREAD_STACK_INFO
+	help
+	  This option signifies the use of a CPU of the Cortex-A family.
+
+if CPU_CORTEX_A
+
+config ARMV8_A
+	bool
+	select ATOMIC_OPERATIONS_BUILTIN
+
+endif #CPU_CORTEX_A

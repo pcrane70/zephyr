@@ -1,0 +1,214 @@
+/* linker.ld - Linker command/script file */
+
+/*
+ * Copyright 2019 Broadcom
+ * The term "Broadcom" refers to Broadcom Inc. and/or its subsidiaries.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+#define _LINKER
+#define _ASMLANGUAGE
+
+#include <autoconf.h>
+#include <linker/sections.h>
+#include <generated_dts_board.h>
+
+#include <linker/linker-defs.h>
+#include <linker/linker-tool.h>
+
+#define RAM_BASE  CONFIG_SRAM_BASE_ADDRESS
+#define RAM_SIZE  (CONFIG_SRAM_SIZE * 1K)
+#define RAM_LIMIT (RAM_BASE + RAM_SIZE)
+#define PAGE_SIZE 0x1000
+
+#define ROMABLE_REGION RAM
+#define RAMABLE_REGION RAM
+
+MEMORY {
+    RAM (rwx): ORIGIN = RAM_BASE, LENGTH = RAM_LIMIT - RAM_BASE
+}
+
+ENTRY(CONFIG_KERNEL_ENTRY)
+
+SECTIONS
+{
+
+#include <linker/rel-sections.ld>
+
+    /DISCARD/ :
+	{
+	*(.plt)
+	}
+
+    /DISCARD/ :
+	{
+	*(.iplt)
+	}
+
+    GROUP_START(ROMABLE_REGION)
+
+    . = RAM_BASE;
+    ASSERT(. == ALIGN(PAGE_SIZE),
+           "BASE address is not aligned on a page boundary.")
+
+    SECTION_PROLOGUE(_TEXT_SECTION_NAME,,)
+    {
+	_image_rom_start = .;
+        *reset.S.obj(.text*)
+
+	_vector_start = .;
+	KEEP(*(.exc_vector_table))
+	KEEP(*(".exc_vector_table.*"))
+	KEEP(*(.vectors.*))
+	_vector_end = .;
+    } GROUP_LINK_IN(ROMABLE_REGION)
+
+    SECTION_PROLOGUE(_TEXT_SECTION_NAME_2,,)
+    {
+	_image_text_start = .;
+
+#include <linker/priv_stacks-text.ld>
+#include <linker/kobject-text.ld>
+
+	*(.text)
+	*(".text.*")
+	*(.gnu.linkonce.t.*)
+
+	*(.glue_7t) *(.glue_7) *(.vfp11_veneer) *(.v4_bx)
+
+    } GROUP_LINK_IN(ROMABLE_REGION)
+
+    _image_text_end = .;
+
+#if defined (CONFIG_CPLUSPLUS)
+    SECTION_PROLOGUE(.ARM.extab,,)
+    {
+	/*
+	 * .ARM.extab section containing exception unwinding information.
+	 */
+	*(.ARM.extab* .gnu.linkonce.armextab.*)
+    } GROUP_LINK_IN(ROMABLE_REGION)
+#endif
+
+    SECTION_PROLOGUE(.ARM.exidx,,)
+    {
+	/*
+	 * This section, related to stack and exception unwinding, is placed
+	 * explicitly to prevent it from being shared between multiple regions.
+	 * It  must be defined for gcc to support 64-bit math and avoid
+	 * section overlap.
+	 */
+	__exidx_start = .;
+#if defined (__GCC_LINKER_CMD__)
+	*(.ARM.exidx* gnu.linkonce.armexidx.*)
+#endif
+	__exidx_end = .;
+    } GROUP_LINK_IN(ROMABLE_REGION)
+
+    _image_rodata_start = .;
+
+#include <linker/common-rom.ld>
+    SECTION_PROLOGUE(_RODATA_SECTION_NAME,,)
+    {
+	*(.rodata)
+	*(".rodata.*")
+	*(.gnu.linkonce.r.*)
+
+#include <linker/priv_stacks-rom.ld>
+#include <linker/kobject-rom.ld>
+
+	. = ALIGN(PAGE_SIZE);
+    } GROUP_LINK_IN(ROMABLE_REGION)
+
+    _image_rodata_end = .;
+    _image_rom_end = .;
+
+    GROUP_END(ROMABLE_REGION)
+
+    SECTION_PROLOGUE(.got,,)
+    {
+	*(.got.plt)
+	*(.igot.plt)
+	*(.got)
+	*(.igot)
+    }
+
+    GROUP_START(RAMABLE_REGION)
+
+    SECTION_DATA_PROLOGUE(_BSS_SECTION_NAME,(NOLOAD),)
+    {
+        /*
+         * For performance, BSS section is assumed to be 4 byte aligned and
+         * a multiple of 4 bytes
+         */
+        . = ALIGN(4);
+	__bss_start = .;
+	__kernel_ram_start = .;
+
+	*(.bss)
+	*(".bss.*")
+	*(COMMON)
+	*(".kernel_bss.*")
+
+        /*
+         * As memory is cleared in words only, it is simpler to ensure the BSS
+         * section ends on a 4 byte boundary. This wastes a maximum of 3 bytes.
+		 */
+	__bss_end = ALIGN(4);
+     } GROUP_DATA_LINK_IN(RAMABLE_REGION, RAMABLE_REGION)
+
+    SECTION_PROLOGUE(_NOINIT_SECTION_NAME,(NOLOAD),)
+    {
+        /*
+         * This section is used for non-initialized objects that
+         * will not be cleared during the boot process.
+         */
+        *(.noinit)
+        *(".noinit.*")
+	*(".kernel_noinit.*")
+
+    } GROUP_LINK_IN(RAMABLE_REGION)
+
+    SECTION_DATA_PROLOGUE(_DATA_SECTION_NAME,,)
+    {
+	__data_ram_start = .;
+	*(.data)
+	*(".data.*")
+	*(".kernel.*")
+
+    } GROUP_DATA_LINK_IN(RAMABLE_REGION, ROMABLE_REGION)
+
+    __data_rom_start = LOADADDR(_DATA_SECTION_NAME);
+
+#include <linker/common-ram.ld>
+#include <linker/priv_stacks.ld>
+#include <linker/kobject.ld>
+
+#include <linker/priv_stacks-noinit.ld>
+
+    __data_ram_end = .;
+
+
+    /* Define linker symbols */
+
+    _image_ram_end = .;
+    _end = .; /* end of image */
+
+    ASSERT(. <= RAM_LIMIT, "image has exceeded its limit.")
+
+    __kernel_ram_end = RAM_LIMIT;
+    __kernel_ram_size = __kernel_ram_end - __kernel_ram_start;
+
+    GROUP_END(RAMABLE_REGION)
+
+#include <linker/debug-sections.ld>
+
+    SECTION_PROLOGUE(.ARM.attributes, 0,)
+    {
+	KEEP(*(.ARM.attributes))
+	KEEP(*(.gnu.attributes))
+    }
+
+    .note.GNU-stack 0 : { *(.note.GNU-stack) }
+}
