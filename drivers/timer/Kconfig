@@ -145,6 +145,13 @@ config CORTEX_M_SYSTICK
 	  This module implements a kernel device driver for the Cortex-M processor
 	  SYSTICK timer and provides the standard "system clock driver" interfaces.
 
+config ARM_GENERIC_TIMER
+	bool "ARM Generic Timer"
+	depends on CPU_CORTEX_A
+	select TICKLESS_CAPABLE
+	help
+	  This module implements a kernel device driver for ARM Generic timer.
+
 config ALTERA_AVALON_TIMER
 	bool "Altera Avalon Interval Timer"
 	default y
