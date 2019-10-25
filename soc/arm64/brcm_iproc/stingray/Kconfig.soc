@@ -1,0 +1,14 @@
+#
+# Copyright 2019 Broadcom
+# The term "Broadcom" refers to Broadcom Inc. and/or its subsidiaries.
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+
+choice
+prompt "Broadcom Stingray SoC"
+depends on SOC_SERIES_STINGRAY
+
+config SOC_BCM58742
+	bool "Broadcom BCM58742"
+endchoice

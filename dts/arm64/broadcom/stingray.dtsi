@@ -1,0 +1,66 @@
+/*
+ * Copyright (C) 2019 Broadcom. All Rights Reserved.
+ * The term "Broadcom" refers to Broadcom Inc. and/or its subsidiaries.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+#include <dt-bindings/interrupt-controller/arm-gic.h>
+
+/ {
+	compatible = "brcm,stingray";
+	interrupt-parent = <&gic>;
+	#address-cells = <2>;
+	#size-cells = <2>;
+
+	memory: memory@80000000 {
+		device_type = "memory";
+		/*
+		 * FIXME: Not to be confused with compatible string "mmio-sram",
+		 * this is actually DDR region.
+		 * This region specifies Zephyr execution region.
+		 */
+		compatible = "mmio-sram";
+		reg = <0x0 0x80000000 0 0x100000>;
+	};
+
+	scr@61000000 {
+		compatible = "simple-bus";
+		#address-cells = <1>;
+		#size-cells = <1>;
+		ranges = <0x0 0x0 0x61000000 0x05000000>;
+
+		gic: interrupt-controller@2c00000 {
+			compatible = "arm,gic";
+			#interrupt-cells = <3>;
+			#address-cells = <1>;
+			#size-cells = <1>;
+			ranges;
+			interrupt-controller;
+			label = "GIC";
+			reg = <0x2c00000 0x010000>, /* GICD */
+			      <0x2e00000 0x600000>; /* GICR */
+		};
+	};
+
+	hsls@68900000 {
+		compatible = "simple-bus";
+		#address-cells = <1>;
+		#size-cells = <1>;
+		ranges = <0x0 0x0 0x68900000 0x17700000>;
+
+		uart1: uart@110000 {
+			device_type = "serial";
+			compatible = "ns16550";
+			reg = <0x00110000 0x1000>;
+			reg-shift = <2>;
+			clock-frequency = <25000000>;
+
+			interrupt-parent = <&gic>;
+			interrupts = <206 IRQ_DEFAULT_PRIORITY IRQ_TYPE_LEVEL>;
+
+			label = "CHIP_COMMON_UART_1";
+			status = "disabled";
+		};
+	};
+};

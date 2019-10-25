@@ -1,0 +1,11 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# Copyright 2019 Broadcom
+#
+
+if BOARD_BRCM_STINGRAY_BCM958742K
+
+config BOARD
+	default "bcm958742k"
+
+endif # BOARD_BRCM_STINGRAY_BCM958742K

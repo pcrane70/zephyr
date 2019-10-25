@@ -1,0 +1,9 @@
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+# Copyright 2019 Broadcom
+#
+
+config BOARD_BRCM_STINGRAY_BCM958742K
+	bool "Broadcom Stingray SoC bcm958742k board"
+	depends on SOC_BCM58742

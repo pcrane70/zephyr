@@ -1,0 +1,23 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+/*
+ * Copyright 2019 Broadcom.
+ */
+
+/dts-v1/;
+
+#include <broadcom/stingray.dtsi>
+
+/ {
+	model = "Stingray Combo SVK(bcm958742k)";
+
+	chosen {
+		zephyr,sram = &memory;
+		zephyr,console = &uart1;
+		zephyr,shell-uart = &uart1;
+	};
+};
+
+&uart1 {
+	status = "okay";
+	current-speed = <115200>;
+};
