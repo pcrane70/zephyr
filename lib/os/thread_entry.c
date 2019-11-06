@@ -26,6 +26,8 @@
 FUNC_NORETURN void z_thread_entry(k_thread_entry_t entry,
 				 void *p1, void *p2, void *p3)
 {
+	irq_unlock(0);
+
 	entry(p1, p2, p3);
 
 	k_thread_abort(k_current_get());
