@@ -5,6 +5,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include <drivers/interrupt_controller/itr_common.h>
+#include <drivers/interrupt_controller/gic.h>
 #include <drivers/timer/system_timer.h>
 #include <sys_clock.h>
 #include <spinlock.h>
@@ -30,7 +32,7 @@ static u64_t get_system_count(void)
 	return arch_counter_get_cntpct();
 }
 
-void timer_isr(void *arg)
+enum intr_return timer_isr(void *arg)
 {
 	ARG_UNUSED(arg);
 
@@ -51,6 +53,8 @@ void timer_isr(void *arg)
 
 	k_spin_unlock(&lock, key);
 	z_clock_announce(IS_ENABLED(CONFIG_TICKLESS_KERNEL) ? dticks : 1);
+
+	return INTR_HANDLED;
 }
 
 void z_clock_set_timeout(s32_t ticks, bool idle)
@@ -96,7 +100,7 @@ u32_t z_clock_elapsed(void)
 
 u32_t z_timer_cycle_get_32(void)
 {
-	return (u32_t)(get_system_count() - last_count);
+	return (u32_t)get_system_count();
 }
 
 int z_clock_driver_init(struct device *dev)
@@ -108,7 +112,11 @@ int z_clock_driver_init(struct device *dev)
 	 * EL3 firmware has set it to correct value
 	 */
 
-	/* TODO: Enable timer interrupt */
+	/* Enable timer interrupt PPI 14 */
+	IRQ_CONNECT(NP_ARCH_TIMER_INTID, GIC_NS_DEFAULT_PRI,
+		    timer_isr, NULL, 0);
+
+	irq_enable(NP_ARCH_TIMER_INTID);
 
 	/* Set initial timer comparator value */
 	arch_timer_set_cmp_val(get_system_count() + CYC_PER_TICK);
